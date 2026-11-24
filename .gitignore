@@ -1,0 +1,31 @@
+# macOS
+.DS_Store
+._*
+.AppleDouble
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Configuración local del editor
+.vscode/
+.idea/
+*.code-workspace
+*.swp
+*.swo
+*~
+
+# Archivos temporales y registros
+*.tmp
+*.log
+
+# Configuración privada y dependencias locales
+.env
+.env.*
+!.env.example
+node_modules/
