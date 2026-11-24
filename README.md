@@ -1,4 +1,4 @@
-# TurnoFácil - Proyecto Final Modulo Uno
+# TurnoFácil
 
 TurnoFácil es una aplicación web para reservar citas en una barbería o salón de belleza de manera rápida y sencilla.
 
@@ -27,6 +27,8 @@ El proyecto no requiere instalación de dependencias.
 2. Abre la carpeta en Visual Studio Code.
 3. Ejecuta `index.html` utilizando Live Server.
 
-## Autor
+## Autores
 
 Juan Andrés Suárez Gaviria
+Jhon Jairo Buitrago
+Jose Mateo Prieto
