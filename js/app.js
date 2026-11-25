@@ -140,10 +140,28 @@ document.addEventListener("DOMContentLoaded", () => {
       obtenerMomentoReserva(primera) - obtenerMomentoReserva(segunda),
      );
 
-    citasOrdenadas.forEach((cita) => {    
-      const tarjetaCita = crearTarjetaCita(cita);
-      listaCitas.appendChild(tarjetaCita);
-    });
+      const ahora = new Date();
+       const proximaCita = citasOrdenadas.find(
+        (cita) => obtenerMomentoReserva(cita) > ahora,
+     );
+
+      citasOrdenadas.forEach((cita) => {
+       const tarjetaCita = crearTarjetaCita(cita);
+
+       if (cita === proximaCita) {
+         const tarjeta = tarjetaCita.querySelector("article");
+         tarjeta.classList.remove("border-0");
+         tarjeta.classList.add("border", "border-primary");
+
+         const etiqueta = document.createElement("span");
+         etiqueta.className = "badge text-bg-primary mb-3";
+         etiqueta.textContent = "Próxima cita";
+
+         tarjeta.querySelector(".card-body").prepend(etiqueta);
+        }
+
+        listaCitas.appendChild(tarjetaCita);
+       });
   }
 
   // Crea la tarjeta visual de una cita
