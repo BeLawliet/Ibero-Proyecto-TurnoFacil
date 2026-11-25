@@ -135,7 +135,12 @@ document.addEventListener("DOMContentLoaded", () => {
     actualizarContador();
     actualizarEstadoVacio();
 
-    citas.forEach((cita) => {
+      const citasOrdenadas = [...citas].sort(
+      (primera, segunda) =>
+      obtenerMomentoReserva(primera) - obtenerMomentoReserva(segunda),
+     );
+
+    citasOrdenadas.forEach((cita) => {    
       const tarjetaCita = crearTarjetaCita(cita);
       listaCitas.appendChild(tarjetaCita);
     });
