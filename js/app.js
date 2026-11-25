@@ -5,6 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const CLAVE_ALMACENAMIENTO = "turnoFacilCitas";
 
   let citas = cargarCitas();
+  let citaIdEnEdicion = null;
 
   // Precios disponibles por servicio
   const preciosServicios = {
@@ -28,6 +29,18 @@ document.addEventListener("DOMContentLoaded", () => {
   const estadoVacio = document.querySelector("#estadoVacio");
   const contadorCitas = document.querySelector("#contadorCitas");
   const mensajeCitas = document.querySelector("#mensajeCitas");
+  const panelReprogramacion = document.querySelector("#panelReprogramacion");
+  const formularioReprogramacion = document.querySelector(
+    "#formularioReprogramacion",
+  );
+  const fechaReprogramacion = document.querySelector("#fechaReprogramacion");
+  const horaReprogramacion = document.querySelector("#horaReprogramacion");
+  const botonCerrarReprogramacion = document.querySelector(
+    "#cerrarFormularioReprogramacion",
+  );
+  const botonCancelarReprogramacion = document.querySelector(
+    "#cancelarReprogramacion",
+  );
 
   // Evita que se seleccionen fechas anteriores al día actual
   fechaReserva.min = obtenerFechaActual();
@@ -97,6 +110,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Gestiona la cancelación de citas mediante delegación de eventos
   listaCitas.addEventListener("click", (evento) => {
+    const botonReprogramar = evento.target.closest(
+      '[data-accion="reprogramar"]',
+    );
+
+    if (botonReprogramar) {
+      abrirFormularioReprogramacion(Number(botonReprogramar.dataset.id));
+      return;
+    }
+
     const botonCancelar = evento.target.closest(
       '[data-accion="cancelar"]',
     );
@@ -125,8 +147,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
     citas = citasActualizadas;
 
+    if (citaIdEnEdicion === citaId) {
+      cerrarFormularioReprogramacion();
+    }
+
     ocultarMensajeCitas();
     renderizarCitas();
+  });
+
+  botonCerrarReprogramacion.addEventListener(
+    "click",
+    cerrarFormularioReprogramacion,
+  );
+  botonCancelarReprogramacion.addEventListener(
+    "click",
+    cerrarFormularioReprogramacion,
+  );
+  formularioReprogramacion.addEventListener("submit", (evento) => {
+    evento.preventDefault();
   });
 
   // Obtiene y organiza los datos escritos en el formulario
@@ -155,6 +193,31 @@ document.addEventListener("DOMContentLoaded", () => {
         cita.fecha === nuevaCita.fecha &&
         cita.hora === nuevaCita.hora,
     );
+  }
+
+  // Abre el formulario independiente con la fecha y hora actuales de la cita
+  function abrirFormularioReprogramacion(citaId) {
+    const cita = citas.find((citaRegistrada) => citaRegistrada.id === citaId);
+
+    if (!cita) {
+      return;
+    }
+
+    citaIdEnEdicion = cita.id;
+    formularioReprogramacion.dataset.citaId = String(cita.id);
+    fechaReprogramacion.value = cita.fecha;
+    horaReprogramacion.value = cita.hora;
+    panelReprogramacion.classList.remove("d-none");
+    panelReprogramacion.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  // Cierra la edición sin cambiar la cita
+  function cerrarFormularioReprogramacion() {
+    citaIdEnEdicion = null;
+    delete formularioReprogramacion.dataset.citaId;
+    fechaReprogramacion.value = "";
+    horaReprogramacion.value = "";
+    panelReprogramacion.classList.add("d-none");
   }
 
   // Interpreta la fecha y la hora como un momento local del navegador
@@ -282,14 +345,25 @@ document.addEventListener("DOMContentLoaded", () => {
             </small>
           </div>
 
-          <button
-            class="btn btn-outline-danger w-100"
-            type="button"
-            data-accion="cancelar"
-            data-id="${cita.id}"
-          >
-            Cancelar cita
-          </button>
+          <div class="d-grid gap-2">
+            <button
+              class="btn btn-outline-primary"
+              type="button"
+              data-accion="reprogramar"
+              data-id="${cita.id}"
+            >
+              Reprogramar
+            </button>
+
+            <button
+              class="btn btn-outline-danger"
+              type="button"
+              data-accion="cancelar"
+              data-id="${cita.id}"
+            >
+              Cancelar cita
+            </button>
+          </div>
         </div>
       </article>
     `;
