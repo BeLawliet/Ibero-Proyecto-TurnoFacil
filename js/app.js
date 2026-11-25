@@ -27,6 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const listaCitas = document.querySelector("#listaCitas");
   const estadoVacio = document.querySelector("#estadoVacio");
   const contadorCitas = document.querySelector("#contadorCitas");
+  const mensajeCitas = document.querySelector("#mensajeCitas");
 
   // Evita que se seleccionen fechas anteriores al día actual
   fechaReserva.min = obtenerFechaActual();
@@ -113,11 +114,18 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const citaId = Number(botonCancelar.dataset.id);
+    const citasActualizadas = citas.filter((cita) => cita.id !== citaId);
 
-    citas = citas.filter((cita) => cita.id !== citaId);
+    if (!guardarCitas(citasActualizadas)) {
+      mostrarMensajeCitas(
+        "No se pudo guardar la cancelación. La cita sigue en tu agenda; inténtalo de nuevo.",
+      );
+      return;
+    }
 
-    guardarCitas();
+    citas = citasActualizadas;
 
+    ocultarMensajeCitas();
     renderizarCitas();
   });
 
@@ -375,6 +383,16 @@ document.addEventListener("DOMContentLoaded", () => {
   function ocultarMensaje() {
     mensajeReserva.textContent = "";
     mensajeReserva.className = "alert d-none mb-0";
+  }
+
+  function mostrarMensajeCitas(texto) {
+    mensajeCitas.textContent = texto;
+    mensajeCitas.className = "alert alert-danger mb-4";
+  }
+
+  function ocultarMensajeCitas() {
+    mensajeCitas.textContent = "";
+    mensajeCitas.className = "alert alert-danger mb-4 d-none";
   }
 
   // Guarda el arreglo de citas convertido a formato JSON
