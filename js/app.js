@@ -71,9 +71,17 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    citas.push(nuevaCita);
+    const citasActualizadas = [...citas, nuevaCita];
 
-    guardarCitas();
+    if (!guardarCitas(citasActualizadas)) {
+      mostrarMensaje(
+        "No fue posible guardar la cita. Inténtalo de nuevo; tus datos siguen en el formulario.",
+        "danger",
+      );
+      return;
+    }
+
+    citas = citasActualizadas;
 
     renderizarCitas();
     formularioReserva.reset();
@@ -370,12 +378,14 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Guarda el arreglo de citas convertido a formato JSON
-  function guardarCitas() {
+  function guardarCitas(citasAGuardar = citas) {
     try {
-      const citasEnJSON = JSON.stringify(citas);
+      const citasEnJSON = JSON.stringify(citasAGuardar);
       localStorage.setItem(CLAVE_ALMACENAMIENTO, citasEnJSON);
+      return true;
     } catch (error) {
       console.error("No fue posible guardar las citas.", error);
+      return false;
     }
   }
 
