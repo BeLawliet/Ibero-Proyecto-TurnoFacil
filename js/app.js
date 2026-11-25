@@ -50,6 +50,14 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    if (obtenerMomentoReserva(nuevaCita) <= new Date()) {
+      mostrarMensaje(
+        "La fecha y hora de la cita deben ser posteriores al momento actual.",
+        "danger",
+      );
+      return;
+    }
+
     if (horarioEstaOcupado(nuevaCita)) {
       mostrarMensaje(
         "Ya existe una cita registrada para esa fecha y hora.",
@@ -126,6 +134,14 @@ document.addEventListener("DOMContentLoaded", () => {
         cita.fecha === nuevaCita.fecha &&
         cita.hora === nuevaCita.hora,
     );
+  }
+
+  // Interpreta la fecha y la hora como un momento local del navegador
+  function obtenerMomentoReserva(cita) {
+    const [anio, mes, dia] = cita.fecha.split("-").map(Number);
+    const [hora, minuto] = cita.hora.split(":").map(Number);
+
+    return new Date(anio, mes - 1, dia, hora, minuto);
   }
 
   // Actualiza las tarjetas, el contador y el estado vacío
