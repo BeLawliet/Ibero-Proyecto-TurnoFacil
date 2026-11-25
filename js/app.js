@@ -5,6 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const CLAVE_ALMACENAMIENTO = "turnoFacilCitas";
 
   let citas = cargarCitas();
+  let citaIdEnEdicion = null;
 
   // Precios disponibles por servicio
   const preciosServicios = {
@@ -28,6 +29,18 @@ document.addEventListener("DOMContentLoaded", () => {
   const estadoVacio = document.querySelector("#estadoVacio");
   const contadorCitas = document.querySelector("#contadorCitas");
   const mensajeCitas = document.querySelector("#mensajeCitas");
+  const panelReprogramacion = document.querySelector("#panelReprogramacion");
+  const formularioReprogramacion = document.querySelector(
+    "#formularioReprogramacion",
+  );
+  const fechaReprogramacion = document.querySelector("#fechaReprogramacion");
+  const horaReprogramacion = document.querySelector("#horaReprogramacion");
+  const botonCerrarReprogramacion = document.querySelector(
+    "#cerrarFormularioReprogramacion",
+  );
+  const botonCancelarReprogramacion = document.querySelector(
+    "#cancelarReprogramacion",
+  );
 
   // Evita que se seleccionen fechas anteriores al día actual
   fechaReserva.min = obtenerFechaActual();
@@ -48,19 +61,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const nuevaCita = obtenerDatosFormulario();
 
-    if (nuevaCita.fecha < obtenerFechaActual()) {
-      mostrarMensaje(
-        "La fecha de la cita no puede ser anterior al día actual.",
-        "danger",
-      );
-      return;
-    }
+    const errorFechaHora = validarFechaHoraCita(
+      nuevaCita.fecha,
+      nuevaCita.hora,
+    );
 
-    if (obtenerMomentoReserva(nuevaCita) <= new Date()) {
-      mostrarMensaje(
-        "La fecha y hora de la cita deben ser posteriores al momento actual.",
-        "danger",
-      );
+    if (errorFechaHora) {
+      mostrarMensaje(errorFechaHora, "danger");
       return;
     }
 
@@ -97,6 +104,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Gestiona la cancelación de citas mediante delegación de eventos
   listaCitas.addEventListener("click", (evento) => {
+    const botonReprogramar = evento.target.closest(
+      '[data-accion="reprogramar"]',
+    );
+
+    if (botonReprogramar) {
+      abrirFormularioReprogramacion(Number(botonReprogramar.dataset.id));
+      return;
+    }
+
     const botonCancelar = evento.target.closest(
       '[data-accion="cancelar"]',
     );
@@ -125,8 +141,82 @@ document.addEventListener("DOMContentLoaded", () => {
 
     citas = citasActualizadas;
 
+    if (citaIdEnEdicion === citaId) {
+      cerrarFormularioReprogramacion();
+    }
+
     ocultarMensajeCitas();
     renderizarCitas();
+  });
+
+  botonCerrarReprogramacion.addEventListener(
+    "click",
+    cerrarFormularioReprogramacion,
+  );
+  botonCancelarReprogramacion.addEventListener(
+    "click",
+    cerrarFormularioReprogramacion,
+  );
+  formularioReprogramacion.addEventListener("submit", (evento) => {
+    evento.preventDefault();
+
+    if (!formularioReprogramacion.checkValidity()) {
+      formularioReprogramacion.reportValidity();
+      return;
+    }
+
+    if (citaIdEnEdicion === null) {
+      return;
+    }
+
+    const citaOriginal = citas.find(
+      (cita) => cita.id === citaIdEnEdicion,
+    );
+
+    if (!citaOriginal) {
+      mostrarMensajeCitas("No se encontró la cita que intentas reprogramar.");
+      return;
+    }
+
+    const citaActualizada = {
+      ...citaOriginal,
+      fecha: fechaReprogramacion.value,
+      hora: horaReprogramacion.value,
+      horaTexto: obtenerTextoHora(horaReprogramacion.value),
+    };
+    const errorFechaHora = validarFechaHoraCita(
+      citaActualizada.fecha,
+      citaActualizada.hora,
+    );
+
+    if (errorFechaHora) {
+      mostrarMensajeCitas(errorFechaHora);
+      return;
+    }
+
+    if (horarioEstaOcupado(citaActualizada, citaIdEnEdicion)) {
+      mostrarMensajeCitas(
+        "Ya existe una cita registrada para esa fecha y hora.",
+        "warning",
+      );
+      return;
+    }
+
+    const citasActualizadas = citas.map((cita) =>
+      cita.id === citaIdEnEdicion ? citaActualizada : cita,
+    );
+
+    if (!guardarCitas(citasActualizadas)) {
+      mostrarMensajeCitas(
+        "No fue posible guardar la reprogramación. La cita original sigue vigente; inténtalo de nuevo.",
+      );
+      return;
+    }
+
+    citas = citasActualizadas;
+    cerrarFormularioReprogramacion();
+    renderizarCitas();
+    mostrarMensajeCitas("La cita fue reprogramada correctamente.", "success");
   });
 
   // Obtiene y organiza los datos escritos en el formulario
@@ -149,12 +239,68 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Comprueba si ya existe una reserva en el mismo horario
-  function horarioEstaOcupado(nuevaCita) {
+  function horarioEstaOcupado(nuevaCita, citaIdExcluida = null) {
     return citas.some(
       (cita) =>
+        (citaIdExcluida === null || cita.id !== citaIdExcluida) &&
         cita.fecha === nuevaCita.fecha &&
         cita.hora === nuevaCita.hora,
     );
+  }
+
+  // Aplica las validaciones de fecha y momento usadas al crear una cita
+  function validarFechaHoraCita(fecha, hora) {
+    if (fecha < obtenerFechaActual()) {
+      return "La fecha de la cita no puede ser anterior al día actual.";
+    }
+
+    if (obtenerMomentoReserva({ fecha, hora }) <= new Date()) {
+      return "La fecha y hora de la cita deben ser posteriores al momento actual.";
+    }
+
+    return null;
+  }
+
+  // Formatea la hora para que la tarjeta conserve el estilo de la agenda
+  function obtenerTextoHora(hora) {
+    const opcionExistente = Array.from(horaReserva.options).find(
+      (opcion) => opcion.value === hora,
+    );
+
+    if (opcionExistente) {
+      return opcionExistente.textContent.trim();
+    }
+
+    const [horas, minutos] = hora.split(":").map(Number);
+    const horaDoceHoras = horas % 12 || 12;
+    const periodo = horas < 12 ? "a. m." : horas === 12 ? "m." : "p. m.";
+
+    return `${horaDoceHoras}:${String(minutos).padStart(2, "0")} ${periodo}`;
+  }
+
+  // Abre el formulario independiente con la fecha y hora actuales de la cita
+  function abrirFormularioReprogramacion(citaId) {
+    const cita = citas.find((citaRegistrada) => citaRegistrada.id === citaId);
+
+    if (!cita) {
+      return;
+    }
+
+    citaIdEnEdicion = cita.id;
+    formularioReprogramacion.dataset.citaId = String(cita.id);
+    fechaReprogramacion.value = cita.fecha;
+    horaReprogramacion.value = cita.hora;
+    panelReprogramacion.classList.remove("d-none");
+    panelReprogramacion.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  // Cierra la edición sin cambiar la cita
+  function cerrarFormularioReprogramacion() {
+    citaIdEnEdicion = null;
+    delete formularioReprogramacion.dataset.citaId;
+    fechaReprogramacion.value = "";
+    horaReprogramacion.value = "";
+    panelReprogramacion.classList.add("d-none");
   }
 
   // Interpreta la fecha y la hora como un momento local del navegador
@@ -282,14 +428,25 @@ document.addEventListener("DOMContentLoaded", () => {
             </small>
           </div>
 
-          <button
-            class="btn btn-outline-danger w-100"
-            type="button"
-            data-accion="cancelar"
-            data-id="${cita.id}"
-          >
-            Cancelar cita
-          </button>
+          <div class="d-grid gap-2">
+            <button
+              class="btn btn-outline-primary"
+              type="button"
+              data-accion="reprogramar"
+              data-id="${cita.id}"
+            >
+              Reprogramar
+            </button>
+
+            <button
+              class="btn btn-outline-danger"
+              type="button"
+              data-accion="cancelar"
+              data-id="${cita.id}"
+            >
+              Cancelar cita
+            </button>
+          </div>
         </div>
       </article>
     `;
@@ -385,9 +542,9 @@ document.addEventListener("DOMContentLoaded", () => {
     mensajeReserva.className = "alert d-none mb-0";
   }
 
-  function mostrarMensajeCitas(texto) {
+  function mostrarMensajeCitas(texto, tipo = "danger") {
     mensajeCitas.textContent = texto;
-    mensajeCitas.className = "alert alert-danger mb-4";
+    mensajeCitas.className = `alert alert-${tipo} mb-4`;
   }
 
   function ocultarMensajeCitas() {
