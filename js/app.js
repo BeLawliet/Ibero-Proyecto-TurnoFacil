@@ -27,6 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const listaCitas = document.querySelector("#listaCitas");
   const estadoVacio = document.querySelector("#estadoVacio");
   const contadorCitas = document.querySelector("#contadorCitas");
+  const mensajeCitas = document.querySelector("#mensajeCitas");
 
   // Evita que se seleccionen fechas anteriores al día actual
   fechaReserva.min = obtenerFechaActual();
@@ -71,9 +72,17 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    citas.push(nuevaCita);
+    const citasActualizadas = [...citas, nuevaCita];
 
-    guardarCitas();
+    if (!guardarCitas(citasActualizadas)) {
+      mostrarMensaje(
+        "No fue posible guardar la cita. Inténtalo de nuevo; tus datos siguen en el formulario.",
+        "danger",
+      );
+      return;
+    }
+
+    citas = citasActualizadas;
 
     renderizarCitas();
     formularioReserva.reset();
@@ -105,11 +114,18 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const citaId = Number(botonCancelar.dataset.id);
+    const citasActualizadas = citas.filter((cita) => cita.id !== citaId);
 
-    citas = citas.filter((cita) => cita.id !== citaId);
+    if (!guardarCitas(citasActualizadas)) {
+      mostrarMensajeCitas(
+        "No se pudo guardar la cancelación. La cita sigue en tu agenda; inténtalo de nuevo.",
+      );
+      return;
+    }
 
-    guardarCitas();
+    citas = citasActualizadas;
 
+    ocultarMensajeCitas();
     renderizarCitas();
   });
 
@@ -369,13 +385,25 @@ document.addEventListener("DOMContentLoaded", () => {
     mensajeReserva.className = "alert d-none mb-0";
   }
 
+  function mostrarMensajeCitas(texto) {
+    mensajeCitas.textContent = texto;
+    mensajeCitas.className = "alert alert-danger mb-4";
+  }
+
+  function ocultarMensajeCitas() {
+    mensajeCitas.textContent = "";
+    mensajeCitas.className = "alert alert-danger mb-4 d-none";
+  }
+
   // Guarda el arreglo de citas convertido a formato JSON
-  function guardarCitas() {
+  function guardarCitas(citasAGuardar = citas) {
     try {
-      const citasEnJSON = JSON.stringify(citas);
+      const citasEnJSON = JSON.stringify(citasAGuardar);
       localStorage.setItem(CLAVE_ALMACENAMIENTO, citasEnJSON);
+      return true;
     } catch (error) {
       console.error("No fue posible guardar las citas.", error);
+      return false;
     }
   }
 
