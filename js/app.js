@@ -50,6 +50,12 @@ document.addEventListener("DOMContentLoaded", () => {
   horaReserva.addEventListener("pointerdown", actualizarHorasDisponibles);
   horaReserva.addEventListener("click", actualizarHorasDisponibles);
 
+  document.querySelectorAll("#servicios a[data-servicio]").forEach((enlace) => {
+    enlace.addEventListener("click", () => {
+      servicioReserva.value = enlace.dataset.servicio;
+    });
+  });
+
   // Registra una nueva cita
   formularioReserva.addEventListener("submit", (evento) => {
     evento.preventDefault();
