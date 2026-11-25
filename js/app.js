@@ -31,6 +31,11 @@ document.addEventListener("DOMContentLoaded", () => {
   // Evita que se seleccionen fechas anteriores al día actual
   fechaReserva.min = obtenerFechaActual();
 
+  fechaReserva.addEventListener("change", actualizarHorasDisponibles);
+  horaReserva.addEventListener("focus", actualizarHorasDisponibles);
+  horaReserva.addEventListener("pointerdown", actualizarHorasDisponibles);
+  horaReserva.addEventListener("click", actualizarHorasDisponibles);
+
   // Registra una nueva cita
   formularioReserva.addEventListener("submit", (evento) => {
     evento.preventDefault();
@@ -45,6 +50,14 @@ document.addEventListener("DOMContentLoaded", () => {
     if (nuevaCita.fecha < obtenerFechaActual()) {
       mostrarMensaje(
         "La fecha de la cita no puede ser anterior al día actual.",
+        "danger",
+      );
+      return;
+    }
+
+    if (obtenerMomentoReserva(nuevaCita) <= new Date()) {
+      mostrarMensaje(
+        "La fecha y hora de la cita deben ser posteriores al momento actual.",
         "danger",
       );
       return;
@@ -126,6 +139,42 @@ document.addEventListener("DOMContentLoaded", () => {
         cita.fecha === nuevaCita.fecha &&
         cita.hora === nuevaCita.hora,
     );
+  }
+
+  // Interpreta la fecha y la hora como un momento local del navegador
+  function obtenerMomentoReserva(cita) {
+    const [anio, mes, dia] = cita.fecha.split("-").map(Number);
+    const [hora, minuto] = cita.hora.split(":").map(Number);
+
+    return new Date(anio, mes - 1, dia, hora, minuto);
+  }
+
+  // Deshabilita las horas que ya pasaron cuando la fecha elegida es hoy
+  function actualizarHorasDisponibles() {
+    const ahora = new Date();
+    const fechaEsHoy = fechaReserva.value === obtenerFechaActual(ahora);
+    const horaSeleccionada = horaReserva.value;
+
+    Array.from(horaReserva.options).forEach((opcion) => {
+      if (!opcion.value) {
+        return;
+      }
+
+      opcion.disabled =
+        fechaEsHoy &&
+        obtenerMomentoReserva({
+          fecha: fechaReserva.value,
+          hora: opcion.value,
+        }) <= ahora;
+    });
+
+    const seleccionDeshabilitada = Array.from(horaReserva.options).some(
+      (opcion) => opcion.value === horaSeleccionada && opcion.disabled,
+    );
+
+    if (horaSeleccionada && seleccionDeshabilitada) {
+      horaReserva.value = "";
+    }
   }
 
   // Actualiza las tarjetas, el contador y el estado vacío
@@ -301,8 +350,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Obtiene la fecha local en formato YYYY-MM-DD
-  function obtenerFechaActual() {
-    const hoy = new Date();
+  function obtenerFechaActual(hoy = new Date()) {
     const anio = hoy.getFullYear();
     const mes = String(hoy.getMonth() + 1).padStart(2, "0");
     const dia = String(hoy.getDate()).padStart(2, "0");
